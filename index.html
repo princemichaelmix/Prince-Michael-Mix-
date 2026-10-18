@@ -71,7 +71,42 @@ const supabaseClient = window.supabase.createClient(
   SUPABASE_KEY
 );
 </script>
+
 async function loadBeats() {
+  const { data, error } = await supabaseClient
+    .from('beats')
+    .select('*');
+
+  if (error) {
+    console.error(error.message);
+    return;
+  }
+
+  const grid = document.querySelector('#beats .grid');
+  if (!grid) return;
+
+  grid.innerHTML = data.map(beat => `
+    <article class="card">
+      <div class="beat-art">
+        <span>PMM</span>
+      </div>
+      <div class="tag">Original Beat</div>
+      <h3>${beat.title}</h3>
+      <p>Artist: ${beat.artist || 'Prince Michael Mix'}</p>
+      <div class="price">
+        ${Number(beat.price) > 0
+          ? '₦' + Number(beat.price).toLocaleString()
+          : 'Contact for price'}
+      </div>
+      <button class="primary"
+        onclick="order('${beat.title.replace(/'/g, "\\'")} beat')">
+        Ask about this beat ↗
+      </button>
+    </article>
+  `).join('');
+}
+
+ loadBeats() {
   const { data, error } = await supabaseClient
     .from('beats')
     .select('*');
