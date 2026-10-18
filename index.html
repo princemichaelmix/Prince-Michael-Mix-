@@ -130,8 +130,20 @@ document.getElementById('year').textContent=new Date().getFullYear();
     };
 
     card.append(
-      art, tag, title, meta, price, description, button
-    );
+  art, tag, title, meta, price, description
+);
+
+if (beat.audio_url) {
+  const audio = document.createElement("audio");
+  audio.controls = true;
+  audio.preload = "none";
+  audio.src = beat.audio_url;
+  audio.style.width = "100%";
+  audio.style.margin = "10px 0";
+  card.appendChild(audio);
+}
+
+card.appendChild(button);
 
     grid.appendChild(card);
   });
