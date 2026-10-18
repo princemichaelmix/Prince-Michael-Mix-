@@ -108,15 +108,6 @@ document.getElementById('year').textContent=new Date().getFullYear();
 
     const description = document.createElement("p");
     description.textContent = beat.description || "";
-    if (beat.audio_url) {
-  const audio = document.createElement("audio");
-  audio.controls = true;
-  audio.preload = "none";
-  audio.src = beat.audio_url;
-  audio.style.width = "100%";
-  audio.style.margin = "10px 0";
-  card.appendChild(audio);
-      }
 
     const button = document.createElement("button");
     button.className = "primary";
