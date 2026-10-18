@@ -132,6 +132,7 @@ audio.style.width = "100%";
 audio.style.margin = "10px 0";
 
 if (beat.audio_url) {
+console.log("AUDIO URL:", beat.audio_url);
   audio.src = beat.audio_url.trim();
   card.appendChild(audio);
 }
