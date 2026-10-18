@@ -124,13 +124,15 @@ document.getElementById('year').textContent=new Date().getFullYear();
   art, tag, title, meta, price, description
 );
 
+const audio = document.createElement("audio");
+audio.setAttribute("controls", "");
+audio.setAttribute("preload", "none");
+audio.style.display = "block";
+audio.style.width = "100%";
+audio.style.margin = "10px 0";
+
 if (beat.audio_url) {
-  const audio = document.createElement("audio");
-  audio.controls = true;
-  audio.preload = "none";
-  audio.src = beat.audio_url;
-  audio.style.width = "100%";
-  audio.style.margin = "10px 0";
+  audio.src = beat.audio_url.trim();
   card.appendChild(audio);
 }
 
