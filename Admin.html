@@ -1,1 +1,144 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prince Michael Mix — Beat Manager</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 30px auto; padding: 16px; background: #f5f5f5; color: #222; }
+    input, textarea, button { box-sizing: border-box; width: 100%; padding: 12px; margin: 7px 0; }
+    button { cursor: pointer; background: #111; color: white; border: 0; border-radius: 5px; }
+    .panel { background: white; padding: 18px; border-radius: 10px; margin-bottom: 16px; }
+    #status { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <h2>Prince Michael Mix</h2>
+  <p>Beat Manager</p>
+
+  <div class="panel" id="loginPanel">
+    <h3>Owner Login</h3>
+    <input id="email" type="email" placeholder="Your Supabase account email">
+    <input id="password" type="password" placeholder="Your password">
+    <button id="loginBtn">Sign in</button>
+  </div>
+
+  <div class="panel" id="manager" hidden>
+    <h3>Add a Beat</h3>
+    <input id="title" placeholder="Beat title">
+    <input id="genre" placeholder="Genre">
+    <textarea id="description" placeholder="Description"></textarea>
+    <input id="price" type="number" min="0" placeholder="Price in naira">
+    <input id="audio_url" type="url" placeholder="Preview audio URL (optional)">
+    <button id="saveBtn">Save Beat</button>
+    <button id="refreshBtn">Refresh Beat List</button>
+    <div id="beats"></div>
+    <button id="logoutBtn">Sign out</button>
+  </div>
+
+  <p id="status">Enter your owner login to continue.</p>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const client = window.supabase.createClient(
+      "https://gsmkytfamfjsdhaafjwq.supabase.co",
+      "sb_publishable_LazdzVkhzek474MxZYyYTw_SlYKRgJq"
+    );
+
+    const $ = id => document.getElementById(id);
+    const status = message => $("status").textContent = message;
+
+    $("loginBtn").onclick = async () => {
+      status("Signing in...");
+      const { error } = await client.auth.signInWithPassword({
+        email: $("email").value.trim(),
+        password: $("password").value
+      });
+      if (error) return status("Login failed: " + error.message);
+      $("loginPanel").hidden = true;
+      $("manager").hidden = false;
+      status("Signed in. Loading beats...");
+      await loadBeats();
+    };
+
+    $("saveBtn").onclick = async () => {
+      const title = $("title").value.trim();
+      const price = Number($("price").value);
+      if (!title || $("price").value === "" || !Number.isFinite(price) || price < 0) {
+        return status("Enter a beat title and a valid price.");
+      }
+      status("Saving beat...");
+      const { error } = await client.from("beats").insert({
+        title,
+        genre: $("genre").value.trim(),
+        description: $("description").value.trim(),
+        price,
+        audio_url: $("audio_url").value.trim() || null,
+        is_active: true
+      });
+      if (error) return status("Save failed: " + error.message);
+      $("title").value = "";
+      $("genre").value = "";
+      $("description").value = "";
+      $("price").value = "";
+      $("audio_url").value = "";
+      status("Beat saved successfully.");
+      await loadBeats();
+    };
+
+    async function loadBeats() {
+      const { data, error } = await client
+        .from("beats")
+        .select("id,title,genre,price,is_active")
+        .order("created_at", { ascending: false });
+      if (error) return status("Could not load beats: " + error.message);
+      $("beats").replaceChildren();
+      data.forEach(beat => {
+        const item = document.createElement("div");
+        item.style.cssText = "border-top:1px solid #ddd;padding:12px 0";
+        const info = document.createElement("p");
+        info.textContent = `${beat.title} — ₦${beat.price} — ${beat.is_active ? "Active" : "Hidden"}`;
+        const toggle = document.createElement("button");
+        toggle.textContent = beat.is_active ? "Hide beat" : "Activate beat";
+        toggle.onclick = async () => {
+          const { error } = await client.from("beats")
+            .update({ is_active: !beat.is_active }).eq("id", beat.id);
+          if (error) return status("Update failed: " + error.message);
+          status("Beat status updated.");
+          await loadBeats();
+        };
+        const remove = document.createElement("button");
+        remove.textContent = "Delete beat";
+        remove.onclick = async () => {
+          if (!confirm("Delete this beat?")) return;
+          const { error } = await client.from("beats").delete().eq("id", beat.id);
+          if (error) return status("Delete failed: " + error.message);
+          status("Beat deleted.");
+          await loadBeats();
+        };
+        item.append(info, toggle, remove);
+        $("beats").append(item);
+      });
+      if (!data.length) status("No beats yet. Add your first beat above.");
+    }
+
+    $("refreshBtn").onclick = loadBeats;
+    $("logoutBtn").onclick = async () => {
+      await client.auth.signOut();
+      $("manager").hidden = true;
+      $("loginPanel").hidden = false;
+      status("Signed out.");
+    };
+
+    client.auth.getSession().then(async ({ data }) => {
+      if (data.session) {
+        $("loginPanel").hidden = true;
+        $("manager").hidden = false;
+        await loadBeats();
+      }
+    });
+  </script>
+</body>
+  </html>
+
