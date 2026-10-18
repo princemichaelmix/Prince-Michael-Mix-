@@ -63,7 +63,7 @@ document.getElementById('year').textContent=new Date().getFullYear();
 
   const { data, error } = await client
     .from("beats")
-    .select("title,genre,description,price,is_active")
+    .select("title,genre,description,price,is_active,audio_url")
     .eq("is_active", true)
     .order("created_at", { ascending: false });
 
