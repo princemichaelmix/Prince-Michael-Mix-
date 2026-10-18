@@ -52,5 +52,24 @@ function copyBank(){if(navigator.clipboard&&navigator.clipboard.writeText){navig
 function checkoutNotice(e){e.preventDefault();if(!CHECKOUT_URL){alert('Add your secure payment checkout URL in the website code after setting up a supported provider.');return;}window.open(CHECKOUT_URL,'_blank','noopener');}
 document.getElementById('year').textContent=new Date().getFullYear();
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = "PASTE_YOUR_PROJECT_URL_HERE";
+  const SUPABASE_KEY = "sb_publishable_LazdzVkhzek474MxZYyYTw_SlYKRgJq";
+
+  const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://gsmkytfamfjsdhaafjwq.supabase.co/rest/v1/";
+const SUPABASE_KEY = "sb_publishable_LazdzVkhzek474MxZYyYTw_SlYKRgJq";
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+</script>
 </body>
 </html>
