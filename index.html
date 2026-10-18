@@ -52,5 +52,82 @@ function copyBank(){if(navigator.clipboard&&navigator.clipboard.writeText){navig
 function checkoutNotice(e){e.preventDefault();if(!CHECKOUT_URL){alert('Add your secure payment checkout URL in the website code after setting up a supported provider.');return;}window.open(CHECKOUT_URL,'_blank','noopener');}
 document.getElementById('year').textContent=new Date().getFullYear();
 </script>
+  
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(async function () {
+  const client = window.supabase.createClient(
+    "https://gsmkytfamfjsdhaafjwq.supabase.co",
+    "sb_publishable_LazdzVkhzek474MxZYyYTw_SlYKRgJq"
+  );
+
+  const { data, error } = await client
+    .from("beats")
+    .select("title,genre,description,price,is_active")
+    .eq("is_active", true)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Beat loading error:", error.message);
+    return;
+  }
+
+  if (!data || data.length === 0) return;
+
+  const grid = document.getElementById("beats-list");
+  if (!grid) return;
+
+  grid.replaceChildren();
+
+  data.forEach(function (beat) {
+    const card = document.createElement("article");
+    card.className = "card";
+
+    const art = document.createElement("div");
+    art.className = "beat-art";
+
+    const genreLabel = document.createElement("span");
+    genreLabel.textContent = (beat.genre || "BEAT").toUpperCase();
+    art.appendChild(genreLabel);
+
+    const tag = document.createElement("div");
+    tag.className = "tag";
+    tag.textContent = beat.genre || "Instrumental";
+
+    const title = document.createElement("h3");
+    title.textContent = beat.title;
+
+    const meta = document.createElement("div");
+    meta.className = "beat-meta";
+    meta.textContent = "Beat license";
+
+    const price = document.createElement("div");
+    price.className = "price";
+    price.textContent =
+      "₦" + Number(beat.price || 0).toLocaleString("en-NG");
+
+    const description = document.createElement("p");
+    description.textContent = beat.description || "";
+
+    const button = document.createElement("button");
+    button.className = "primary";
+    button.textContent = "Ask to license ↗";
+    button.onclick = function () {
+      if (typeof order === "function") {
+        order(beat.title + " beat — license enquiry");
+      } else {
+        alert("Please contact Prince Michael Mix to license this beat.");
+      }
+    };
+
+    card.append(
+      art, tag, title, meta, price, description, button
+    );
+
+    grid.appendChild(card);
+  });
+})();
+      </script>
+  
 </body>
 </html>
