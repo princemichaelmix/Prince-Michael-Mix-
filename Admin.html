@@ -6,11 +6,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Prince Michael Mix — Beat Manager</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 600px; margin: 30px auto; padding: 16px; background: #f5f5f5; color: #222; }
-    input, textarea, button { box-sizing: border-box; width: 100%; padding: 12px; margin: 7px 0; }
-    button { cursor: pointer; background: #111; color: white; border: 0; border-radius: 5px; }
-    .panel { background: white; padding: 18px; border-radius: 10px; margin-bottom: 16px; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 30px auto;
+      padding: 16px;
+      background: #f5f5f5;
+      color: #222;
+    }
+    input, textarea, button {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 12px;
+      margin: 7px 0;
+    }
+    button {
+      cursor: pointer;
+      background: #111;
+      color: white;
+      border: 0;
+      border-radius: 5px;
+    }
+    .panel {
+      background: white;
+      padding: 18px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+    }
     #status { overflow-wrap: anywhere; }
+    .beat-item {
+      border-top: 1px solid #ddd;
+      padding: 12px 0;
+    }
+    .cancel { background: #666; }
   </style>
 </head>
 <body>
@@ -19,25 +47,30 @@
 
   <div class="panel" id="loginPanel">
     <h3>Owner Login</h3>
-    <input id="email" type="email" placeholder="Your Supabase account email">
-    <input id="password" type="password" placeholder="Your password">
+    <input id="email" type="email" placeholder="Supabase account email">
+    <input id="password" type="password" placeholder="Password">
     <button id="loginBtn">Sign in</button>
   </div>
 
   <div class="panel" id="manager" hidden>
-    <h3>Add a Beat</h3>
+    <h3 id="formTitle">Add a Beat</h3>
+
     <input id="title" placeholder="Beat title">
     <input id="genre" placeholder="Genre">
     <textarea id="description" placeholder="Description"></textarea>
     <input id="price" type="number" min="0" placeholder="Price in naira">
-    <input id="audio_url" type="url" placeholder="Preview audio URL (optional)">
+    <input id="audio_url" type="url" placeholder="Preview audio URL">
+
     <button id="saveBtn">Save Beat</button>
+    <button id="cancelBtn" class="cancel" hidden>Cancel Edit</button>
+
+    <h3>Your Beats</h3>
     <button id="refreshBtn">Refresh Beat List</button>
     <div id="beats"></div>
     <button id="logoutBtn">Sign out</button>
   </div>
 
-  <p id="status">Enter your owner login to continue.</p>
+  <p id="status">Sign in to manage your beats.</p>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
@@ -47,7 +80,23 @@
     );
 
     const $ = id => document.getElementById(id);
-    const status = message => $("status").textContent = message;
+    let editingId = null;
+
+    function status(message) {
+      $("status").textContent = message;
+    }
+
+    function resetForm() {
+      editingId = null;
+      $("formTitle").textContent = "Add a Beat";
+      $("saveBtn").textContent = "Save Beat";
+      $("cancelBtn").hidden = true;
+      $("title").value = "";
+      $("genre").value = "";
+      $("description").value = "";
+      $("price").value = "";
+      $("audio_url").value = "";
+    }
 
     $("loginBtn").onclick = async () => {
       status("Signing in...");
@@ -55,83 +104,163 @@
         email: $("email").value.trim(),
         password: $("password").value
       });
-      if (error) return status("Login failed: " + error.message);
+
+      if (error) {
+        status("Login failed: " + error.message);
+        return;
+      }
+
       $("loginPanel").hidden = true;
       $("manager").hidden = false;
-      status("Signed in. Loading beats...");
+      status("Signed in.");
       await loadBeats();
     };
 
     $("saveBtn").onclick = async () => {
       const title = $("title").value.trim();
-      const price = Number($("price").value);
-      if (!title || $("price").value === "" || !Number.isFinite(price) || price < 0) {
-        return status("Enter a beat title and a valid price.");
+      const rawPrice = $("price").value;
+      const price = Number(rawPrice);
+
+      if (!title || rawPrice === "" ||
+          !Number.isFinite(price) || price < 0) {
+        status("Enter a title and a valid price.");
+        return;
       }
-      status("Saving beat...");
-      const { error } = await client.from("beats").insert({
+
+      const beat = {
         title,
         genre: $("genre").value.trim(),
         description: $("description").value.trim(),
         price,
-        audio_url: $("audio_url").value.trim() || null,
-        is_active: true
-      });
-      if (error) return status("Save failed: " + error.message);
-      $("title").value = "";
-      $("genre").value = "";
-      $("description").value = "";
-      $("price").value = "";
-      $("audio_url").value = "";
-      status("Beat saved successfully.");
+        audio_url: $("audio_url").value.trim() || null
+      };
+
+      status(editingId ? "Updating beat..." : "Saving beat...");
+
+      let result;
+
+      if (editingId) {
+        result = await client.from("beats")
+          .update(beat)
+          .eq("id", editingId);
+      } else {
+        beat.is_active = true;
+        result = await client.from("beats").insert(beat);
+      }
+
+      if (result.error) {
+        status("Save failed: " + result.error.message);
+        return;
+      }
+
+      status(editingId ? "Beat updated successfully." :
+        "Beat saved successfully.");
+
+      resetForm();
       await loadBeats();
     };
+
+    $("cancelBtn").onclick = resetForm;
 
     async function loadBeats() {
       const { data, error } = await client
         .from("beats")
-        .select("id,title,genre,price,is_active")
+        .select("id,title,genre,description,price,audio_url,is_active")
         .order("created_at", { ascending: false });
-      if (error) return status("Could not load beats: " + error.message);
+
+      if (error) {
+        status("Could not load beats: " + error.message);
+        return;
+      }
+
       $("beats").replaceChildren();
+
       data.forEach(beat => {
         const item = document.createElement("div");
-        item.style.cssText = "border-top:1px solid #ddd;padding:12px 0";
+        item.className = "beat-item";
+
         const info = document.createElement("p");
-        info.textContent = `${beat.title} — ₦${beat.price} — ${beat.is_active ? "Active" : "Hidden"}`;
+        info.textContent =
+          beat.title + " — ₦" +
+          Number(beat.price).toLocaleString("en-NG") +
+          (beat.is_active ? " — Active" : " — Hidden");
+
+        const edit = document.createElement("button");
+        edit.textContent = "Edit Beat";
+        edit.onclick = () => {
+          editingId = beat.id;
+          $("formTitle").textContent = "Edit Beat";
+          $("saveBtn").textContent = "Update Beat";
+          $("cancelBtn").hidden = false;
+
+          $("title").value = beat.title || "";
+          $("genre").value = beat.genre || "";
+          $("description").value = beat.description || "";
+          $("price").value = beat.price ?? "";
+          $("audio_url").value = beat.audio_url || "";
+
+          status("Change the details, then tap Update Beat.");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        };
+
         const toggle = document.createElement("button");
-        toggle.textContent = beat.is_active ? "Hide beat" : "Activate beat";
+        toggle.textContent = beat.is_active ? "Hide Beat" : "Activate Beat";
         toggle.onclick = async () => {
           const { error } = await client.from("beats")
-            .update({ is_active: !beat.is_active }).eq("id", beat.id);
-          if (error) return status("Update failed: " + error.message);
+            .update({ is_active: !beat.is_active })
+            .eq("id", beat.id);
+
+          if (error) {
+            status("Update failed: " + error.message);
+            return;
+          }
+
           status("Beat status updated.");
           await loadBeats();
         };
+
         const remove = document.createElement("button");
-        remove.textContent = "Delete beat";
+        remove.textContent = "Delete Beat";
         remove.onclick = async () => {
-          if (!confirm("Delete this beat?")) return;
-          const { error } = await client.from("beats").delete().eq("id", beat.id);
-          if (error) return status("Delete failed: " + error.message);
+          if (!confirm("Delete " + beat.title + "?")) return;
+
+          const { error } = await client.from("beats")
+            .delete()
+            .eq("id", beat.id);
+
+          if (error) {
+            status("Delete failed: " + error.message);
+            return;
+          }
+
+          if (editingId === beat.id) resetForm();
           status("Beat deleted.");
           await loadBeats();
         };
-        item.append(info, toggle, remove);
-        $("beats").append(item);
+
+        item.append(info, edit, toggle, remove);
+        $("beats").appendChild(item);
       });
-      if (!data.length) status("No beats yet. Add your first beat above.");
+
+      if (!data.length) status("No beats yet.");
     }
 
     $("refreshBtn").onclick = loadBeats;
+
     $("logoutBtn").onclick = async () => {
       await client.auth.signOut();
       $("manager").hidden = true;
       $("loginPanel").hidden = false;
+      resetForm();
       status("Signed out.");
     };
 
-    client.auth.getSession().then(async ({ data }) => {
+    client.auth.getSession().then(async ({ data, error }) => {
+      if (error) {
+        status("Could not check login: " + error.message);
+        return;
+      }
+
       if (data.session) {
         $("loginPanel").hidden = true;
         $("manager").hidden = false;
@@ -140,5 +269,4 @@
     });
   </script>
 </body>
-  </html>
-
+</html>
