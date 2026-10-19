@@ -32,7 +32,7 @@
 
   <section id="beats" class="dark-section">
     <div class="wrap">
-      <div class="section-head"><div><div class="eyebrow">Find your next sound</div><h2>Beats for your next record</h2></div><p>Listen to previews, choose a beat, and ask about licensing. I'll confirm availability and terms before payment.</p></div>
+      <div class="section-head"><div><div class="eyebrow">Find your next sound</div><h2>Beats for your next record</h2></div><p>Listen to previews, choose a licence and currency, then send an order enquiry on WhatsApp. Payment is not taken on this page.</p></div>
       <div id="beats-list" class="grid" aria-live="polite"><div class="status">Loading beats…</div></div>
       <p class="note" style="margin-top:15px">Audio previews play from the public preview URL saved for each active beat.</p>
     </div>
@@ -81,7 +81,7 @@
 <script>
   // Replace with your own WhatsApp number in international format, digits only.
   // Example for Nigeria: 234 followed by your number without the leading 0.
-  const WHATSAPP_NUMBER = "2348000000000";
+  const WHATSAPP_NUMBER = "2348100756072";
 
   function order(item) {
     const service = document.getElementById("service");
@@ -142,6 +142,24 @@
 
     if (error) throw error;
 
+    // Load licence prices from Supabase. Fallback values keep the page usable if the table is temporarily unavailable.
+    const fallbackLicencePrices = [
+      { licence_type: "MP3", ngn_price: 40000, usd_price: 20 },
+      { licence_type: "WAV", ngn_price: 60000, usd_price: 60 },
+      { licence_type: "Trackouts / Stems", ngn_price: 100000, usd_price: 100 },
+      { licence_type: "Exclusive rights", ngn_price: 150000, usd_price: 160 }
+    ];
+    const { data: licencePrices, error: licenceError } = await client
+      .from("licence_prices")
+      .select("licence_type,ngn_price,usd_price")
+      .eq("is_active", true)
+      .order("ngn_price", { ascending: true });
+
+    if (licenceError) console.warn("Licence prices could not load; using fallback prices:", licenceError);
+    const activeLicencePrices = licenceError || !licencePrices || licencePrices.length === 0
+      ? fallbackLicencePrices
+      : licencePrices;
+
     grid.replaceChildren();
 
     if (!beats || beats.length === 0) {
@@ -176,45 +194,25 @@
 
       const price = document.createElement("div");
       price.className = "price";
-      const numericPrice = Number(beat.price);
-      price.textContent = Number.isFinite(numericPrice) && beat.price !== null && beat.price !== "" ? "₦" + numericPrice.toLocaleString("en-NG") : "Contact for price";
 
       const description = document.createElement("p");
       description.textContent = beat.description || "Original instrumental beat.";
 
       card.append(art, tag, title, meta, price, description);
 
-      const audioUrl = String(beat.audio_url || "").trim();
-      if (audioUrl) {
-        const audio = document.createElement("audio");
-        audio.controls = true;
-        audio.preload = "metadata";
-        audio.setAttribute("playsinline", "");
-        audio.src = audioUrl;
-        audio.setAttribute("aria-label", "Preview: " + (beat.title || "beat"));
-        card.appendChild(audio);
-      } else {
-        const note = document.createElement("p");
-        note.className = "note";
-        note.textContent = "Audio preview unavailable.";
-        card.appendChild(note);
-      }
-
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "primary";
-      button.textContent = "Ask to license ↗";
-      button.addEventListener("click", function () {
-        order((beat.title || "Beat") + " — beat license");
+      const licenceField = document.createElement("div");
+      licenceField.className = "field";
+      const licenceLabel = document.createElement("label");
+      licenceLabel.textContent = "Choose licence";
+      const licenceSelect = document.createElement("select");
+      licenceSelect.setAttribute("aria-label", "Choose licence for " + (beat.title || "beat"));
+      activeLicencePrices.forEach(function (licence) {
+        const option = document.createElement("option");
+        option.value = licence.licence_type;
+        option.textContent = licence.licence_type;
+        licenceSelect.appendChild(option);
       });
-      card.appendChild(button);
-      grid.appendChild(card);
-    });
-  } catch (error) {
-    console.error("Beat loading error:", error);
-    showMessage("Beats could not load. Please refresh the page. If this continues, check the browser console and Supabase table permissions.");
-  }
-})();
-</script>
-</body>
-</html>
+      licenceField.append(licenceLabel, licenceSelect);
+
+      const currencyField = document.createElement("div");
+      currencyField.className = "
