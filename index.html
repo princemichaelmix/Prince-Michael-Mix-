@@ -105,6 +105,7 @@ document.getElementById('year').textContent=new Date().getFullYear();
 
       const price = document.createElement("div");
       price.className = "price";
+      
       price.textContent =
         "₦" + Number(beat.price || 0).toLocaleString("en-NG");
 
@@ -114,22 +115,30 @@ document.getElementById('year').textContent=new Date().getFullYear();
       card.append(art, tag, title, meta, price, description);
 
       if (beat.audio_url && beat.audio_url.trim()) {
-        const audio = document.createElement("audio");
-        audio.controls = true;
-        audio.preload = "none";
-        audio.src = beat.audio_url.trim();
-        audio.style.display = "block";
-        audio.style.width = "100%";
-        audio.style.margin = "12px 0";
-        card.appendChild(audio);
-      }
+        
+const audio = document.createElement("audio");
+audio.controls = true;
+audio.preload = "metadata";
+audio.setAttribute("playsinline", "");
+audio.style.display = "block";
+audio.style.width = "100%";
+audio.style.minHeight = "40px";
+audio.style.margin = "12px 0";
 
-      const button = document.createElement("button");
-      button.className = "primary";
-      button.textContent = "Ask to license ↗";
-      button.onclick = function () {
-        order(beat.title + " beat — license enquiry");
-      };
+const isNorthBeat = (beat.title || "").trim().toLowerCase() === "north beat";
+
+const audioUrl =
+  (typeof beat.audio_url === "string" && beat.audio_url.trim())
+    ? beat.audio_url.trim()
+    : (isNorthBeat
+        ? "https://gsmkytfamfjsdhaafjwq.supabase.co/storage/v1/object/public/beat-previews/North-beat.mp3"
+        : "");
+
+if (audioUrl) {
+  audio.src = audioUrl;
+  card.appendChild(audio);
+        }
+        
 
       card.appendChild(button);
       grid.appendChild(card);
