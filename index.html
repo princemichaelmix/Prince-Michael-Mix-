@@ -98,6 +98,63 @@ document.getElementById('year').textContent=new Date().getFullYear();
 
       const title = document.createElement("h3");
       title.textContent = beat.title || "Untitled beat";
+      
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(async function () {
+  const SUPABASE_URL =
+    "https://gsmkytfamfjsdhaafjwq.supabase.co";
+
+  const SUPABASE_KEY =
+    "sb_publishable_LazdzVkhzek474MxZYyYTw_SlYKRgJq";
+
+  const client = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+
+  const grid = document.getElementById("beats-list");
+
+  if (!grid) {
+    console.error("Could not find beats-list.");
+    return;
+  }
+
+  try {
+    const { data: beats, error } = await client
+      .from("beats")
+      .select(
+        "title,genre,description,price,is_active,audio_url,created_at"
+      )
+      .eq("is_active", true)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    grid.replaceChildren();
+
+    if (!beats || beats.length === 0) {
+      grid.textContent = "No beats available yet.";
+      return;
+    }
+
+    beats.forEach(function (beat) {
+      const card = document.createElement("article");
+      card.className = "card";
+
+      const art = document.createElement("div");
+      art.className = "beat-art";
+
+      const artLabel = document.createElement("span");
+      artLabel.textContent = (beat.genre || "BEAT").toUpperCase();
+      art.appendChild(artLabel);
+
+      const tag = document.createElement("div");
+      tag.className = "tag";
+      tag.textContent = beat.genre || "Instrumental";
+
+      const title = document.createElement("h3");
+      title.textContent = beat.title || "Untitled beat";
 
       const meta = document.createElement("div");
       meta.className = "beat-meta";
@@ -105,7 +162,6 @@ document.getElementById('year').textContent=new Date().getFullYear();
 
       const price = document.createElement("div");
       price.className = "price";
-      
       price.textContent =
         "₦" + Number(beat.price || 0).toLocaleString("en-NG");
 
@@ -114,60 +170,54 @@ document.getElementById('year').textContent=new Date().getFullYear();
 
       card.append(art, tag, title, meta, price, description);
 
-      if (beat.audio_url && beat.audio_url.trim()) {
-        
-const audio = document.createElement("audio");
-audio.controls = true;
-audio.preload = "metadata";
-audio.setAttribute("playsinline", "");
-audio.style.display = "block";
-audio.style.width = "100%";
-audio.style.minHeight = "40px";
-audio.style.margin = "12px 0";
-
-const isNorthBeat = (beat.title || "").trim().toLowerCase() === "north beat";
-
-const audioUrl =
-  
-      const audio = document.createElement("audio");
-      audio.controls = true;
-      audio.preload = "metadata";
-      audio.setAttribute("playsinline", "");
-      audio.style.display = "block";
-      audio.style.width = "100%";
-      audio.style.minHeight = "40px";
-      audio.style.margin = "12px 0";
-
       const audioUrl =
-        (typeof beat.audio_url === "string" && beat.audio_url.trim())
+        typeof beat.audio_url === "string"
           ? beat.audio_url.trim()
-          : ((beat.title || "").trim().toLowerCase() === "north beat"
-              ? "https://gsmkytfamfjsdhaafjwq.supabase.co/storage/v1/object/public/beat-previews/North-beat.mp3"
-              : "");
+          : "";
 
       if (audioUrl) {
+        const audio = document.createElement("audio");
+        audio.controls = true;
+        audio.preload = "metadata";
+        audio.setAttribute("playsinline", "");
         audio.src = audioUrl;
+        audio.style.display = "block";
+        audio.style.width = "100%";
+        audio.style.margin = "12px 0";
         card.appendChild(audio);
+      } else {
+        const note = document.createElement("p");
+        note.className = "note";
+        note.textContent = "Audio preview unavailable.";
+        card.appendChild(note);
       }
 
       const button = document.createElement("button");
       button.className = "primary";
       button.textContent = "Ask to license ↗";
+
       button.addEventListener("click", function () {
-        order((beat.title || "Beat") + " beat — starter license");
+        if (typeof window.order === "function") {
+          window.order(
+            (beat.title || "Beat") + " beat — starter license"
+          );
+        } else {
+          alert("Please contact us to license this beat.");
+        }
       });
+
       card.appendChild(button);
-  
       grid.appendChild(card);
     });
   } catch (error) {
     console.error("Beat loading error:", error);
-    grid.textContent = "Beats could not load. Please refresh the page.";
+    grid.textContent =
+      "Beats could not load. Please refresh the page.";
   }
 })();
 </script>
+  
 
-      </script>
   
 </body>
 </html>
