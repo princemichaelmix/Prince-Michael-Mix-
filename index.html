@@ -170,10 +170,7 @@ document.getElementById('year').textContent=new Date().getFullYear();
 
       card.append(art, tag, title, meta, price, description);
 
-      const audioUrl =
-        typeof beat.audio_url === "string"
-          ? beat.audio_url.trim()
-          : "";
+      const audioUrl = String(beat.audio_url || "").trim();
 
       if (audioUrl) {
         const audio = document.createElement("audio");
