@@ -128,19 +128,36 @@ audio.style.margin = "12px 0";
 const isNorthBeat = (beat.title || "").trim().toLowerCase() === "north beat";
 
 const audioUrl =
-  (typeof beat.audio_url === "string" && beat.audio_url.trim())
-    ? beat.audio_url.trim()
-    : (isNorthBeat
-        ? "https://gsmkytfamfjsdhaafjwq.supabase.co/storage/v1/object/public/beat-previews/North-beat.mp3"
-        : "");
+  
+      const audio = document.createElement("audio");
+      audio.controls = true;
+      audio.preload = "metadata";
+      audio.setAttribute("playsinline", "");
+      audio.style.display = "block";
+      audio.style.width = "100%";
+      audio.style.minHeight = "40px";
+      audio.style.margin = "12px 0";
 
-if (audioUrl) {
-  audio.src = audioUrl;
-  card.appendChild(audio);
-        }
-        
+      const audioUrl =
+        (typeof beat.audio_url === "string" && beat.audio_url.trim())
+          ? beat.audio_url.trim()
+          : ((beat.title || "").trim().toLowerCase() === "north beat"
+              ? "https://gsmkytfamfjsdhaafjwq.supabase.co/storage/v1/object/public/beat-previews/North-beat.mp3"
+              : "");
 
+      if (audioUrl) {
+        audio.src = audioUrl;
+        card.appendChild(audio);
+      }
+
+      const button = document.createElement("button");
+      button.className = "primary";
+      button.textContent = "Ask to license ↗";
+      button.addEventListener("click", function () {
+        order((beat.title || "Beat") + " beat — starter license");
+      });
       card.appendChild(button);
+  
       grid.appendChild(card);
     });
   } catch (error) {
