@@ -213,4 +213,91 @@
       licenceLabel.textContent = "Choose licence";
       const licenceSelect = document.createElement("select");
       licenceSelect.setAttribute("aria-label", "Choose licence for " + (beat.title || "beat"));
-      activeLicencePrices.forEach(functi
+      activeLicencePrices.forEach(function (licence) {
+        const option = document.createElement("option");
+        option.value = licence.licence_type;
+        option.textContent = licence.licence_type;
+        licenceSelect.appendChild(option);
+      });
+      licenceField.append(licenceLabel, licenceSelect);
+
+      const currencyField = document.createElement("div");
+      currencyField.className = "field";
+      const currencyLabel = document.createElement("label");
+      currencyLabel.textContent = "Currency";
+      const currencySelect = document.createElement("select");
+      currencySelect.setAttribute("aria-label", "Currency for " + (beat.title || "beat"));
+      [{ value: "NGN", label: "NGN — Nigerian naira" }, { value: "USD", label: "USD — US dollars" }].forEach(function (currency) {
+        const option = document.createElement("option");
+        option.value = currency.value;
+        option.textContent = currency.label;
+        currencySelect.appendChild(option);
+      });
+      currencyField.append(currencyLabel, currencySelect);
+      card.append(licenceField, currencyField);
+
+      function updateLicencePrice() {
+        const selectedLicence = activeLicencePrices.find(function (licence) {
+          return licence.licence_type === licenceSelect.value;
+        }) || activeLicencePrices[0];
+        if (!selectedLicence) {
+          price.textContent = "Contact for price";
+          return;
+        }
+        if (currencySelect.value === "USD") {
+          price.textContent = "$" + Number(selectedLicence.usd_price).toLocaleString("en-US") + " USD";
+        } else {
+          price.textContent = "₦" + Number(selectedLicence.ngn_price).toLocaleString("en-NG") + " NGN";
+        }
+      }
+      licenceSelect.addEventListener("change", updateLicencePrice);
+      currencySelect.addEventListener("change", updateLicencePrice);
+      updateLicencePrice();
+
+      const audioUrl = String(beat.audio_url || "").trim();
+      if (audioUrl) {
+        const audio = document.createElement("audio");
+        audio.controls = true;
+        audio.preload = "metadata";
+        audio.setAttribute("playsinline", "");
+        audio.src = audioUrl;
+        audio.setAttribute("aria-label", "Preview: " + (beat.title || "beat"));
+        card.appendChild(audio);
+      } else {
+        const note = document.createElement("p");
+        note.className = "note";
+        note.textContent = "Audio preview unavailable.";
+        card.appendChild(note);
+      }
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "primary";
+      button.textContent = "Continue to order ↗";
+      button.addEventListener("click", function () {
+        const selectedLicence = activeLicencePrices.find(function (licence) {
+          return licence.licence_type === licenceSelect.value;
+        }) || activeLicencePrices[0];
+        if (!selectedLicence) {
+          order((beat.title || "Beat") + " — beat licence (please confirm price)");
+          return;
+        }
+        const currency = currencySelect.value;
+        const amount = currency === "USD" ? selectedLicence.usd_price : selectedLicence.ngn_price;
+        const formattedAmount = currency === "USD"
+          ? "$" + Number(amount).toLocaleString("en-US")
+          : "₦" + Number(amount).toLocaleString("en-NG");
+        order((beat.title || "Beat") + " — " + selectedLicence.licence_type + " licence — " + formattedAmount + " " + currency);
+      });
+      card.appendChild(button);
+      grid.appendChild(card);
+    });
+  } catch (error) {
+    console.error("Beat loading error:", error);
+    const detail = error && error.message ? error.message : "Unknown error";
+    showMessage("Beats could not load. " + detail + " Check that the beats table allows public SELECT access and that the beat is marked active.");
+  }
+})();
+</script>
+</body>
+</html>
