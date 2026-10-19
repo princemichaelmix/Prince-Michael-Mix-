@@ -171,6 +171,13 @@ document.getElementById('year').textContent=new Date().getFullYear();
       card.append(art, tag, title, meta, price, description);
 
       const audioUrl = String(beat.audio_url || "").trim();
+      const audioUrl = String(beat.audio_url || "").trim();
+
+console.log("Beat:", beat.title);
+console.log("Audio URL:", beat.audio_url);
+console.log("Using URL:", audioUrl);
+
+
 
       if (audioUrl) {
         const audio = document.createElement("audio");
