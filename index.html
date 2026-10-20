@@ -100,7 +100,7 @@ $("beatsGrid").addEventListener("click", async (event)=>{
   if(!customerEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())){alert("Please enter a valid email address.");return;}
   button.disabled=true;button.textContent="Opening secure checkout…";
   try{
-    const response=await fetch(`${SUPABASE_URL}/functions/v1/initialize-payment`,{
+    const response=await fetch(`${SUPABASE_URL}/functions/v1/initialize-payment-`,{
       method:"POST",headers:{"Content-Type":"application/json",...headers},
       body:JSON.stringify({beat_id:beatId,licence_type:licenceType,customer_email:customerEmail.trim(),customer_name:customerName.trim(),callback_url:location.origin+location.pathname})
     });
